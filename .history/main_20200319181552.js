@@ -122,7 +122,7 @@ class Game {
         this._failAudioElem.play();
         this._Player.setScore(-1);
 
-        if (this._Player.missed >= this._Player.maxMissed || this._Player.score < 0) {
+        if (this._Player.missed >= this._Player.maxMissed) {
             this._World.toggleGameOver();
             this._Player._Virus.toggleSpawning(false);
             this.gameState === "GAMEOVER";

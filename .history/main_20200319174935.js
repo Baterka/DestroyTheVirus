@@ -10,8 +10,6 @@ class Game {
     _successAudioElem = document.getElementById("successSound");
     _failAudioElem = document.getElementById("failSound");
 
-    _buttonNewGameElem = document.getElementById('button_newGame');
-
     tps = 60;
 
     canvasOffset = {
@@ -30,9 +28,6 @@ class Game {
         maxX: 0,
         maxY: 0
     }
-
-    // ENUM: RUNNING, GAMEOVER
-    gameState = "GAMEOVER"
 
     constructor(player, world) {
         this._Player = player;
@@ -61,14 +56,6 @@ class Game {
         this._onWindowResize();
 
         setInterval(() => this._tick(), 1000 / this.tps);
-
-        this._buttonNewGameElem.addEventListener("click", e => {
-            if (this.gameState !== "RUNNING") {
-                this._World.toggleGameOver(true);
-                this._Player._Virus.toggleSpawning(true);
-                this._buttonNewGameElem.disabled = true;
-            }
-        });
     }
 
     /**
@@ -122,12 +109,8 @@ class Game {
         this._failAudioElem.play();
         this._Player.setScore(-1);
 
-        if (this._Player.missed >= this._Player.maxMissed || this._Player.score < 0) {
+        if (this._Player.missed >= this._Player.maxMissed)
             this._World.toggleGameOver();
-            this._Player._Virus.toggleSpawning(false);
-            this.gameState === "GAMEOVER";
-            this._buttonNewGameElem.disabled = false;
-        }
     }
 }
 
@@ -233,7 +216,7 @@ class Virus {
 
     _list = {};
 
-    _spawningEnabled = false;
+    spawningEnabled = false;
 
     _spawnRate = 2000;
 
@@ -247,27 +230,14 @@ class Virus {
         }
         this._virusElem.appendChild(clickableElem);
 
-        if (this._spawningEnabled)
-            this._spawner();
-    }
-
-    _spawner() {
-        setTimeout(() => {
-            if (!this._spawningEnabled)
-                return;
+        const spawner = () => setTimeout(() => {
             const x = randomNumber(this._Game.mapBoundary.minX, this._Game.mapBoundary.maxX + 15);
             const y = randomNumber(this._Game.mapBoundary.minY, this._Game.mapBoundary.maxY - 13);
             this.spawn(x, y);
             console.log(this._spawnRate);
-            this._spawner();
+            spawner();
         }, --this._spawnRate);
-    }
-
-    toggleSpawning(enable) {
-        this._spawningEnabled = enable;
-        console.log("Virus spawning:", enable ? "enabled" : "disabled");
-        if (this._spawningEnabled)
-            this._spawner();
+        spawner();
     }
 
     spawn(x, y) {
@@ -295,8 +265,6 @@ class Virus {
      * Handling clicks on viruses
      */
     onClick(id) {
-        if (!this._spawningEnabled)
-            return;
         const elem = this._list[id];
         if (!elem)
             return;

@@ -10,8 +10,6 @@ class Game {
     _successAudioElem = document.getElementById("successSound");
     _failAudioElem = document.getElementById("failSound");
 
-    _buttonNewGameElem = document.getElementById('button_newGame');
-
     tps = 60;
 
     canvasOffset = {
@@ -30,9 +28,6 @@ class Game {
         maxX: 0,
         maxY: 0
     }
-
-    // ENUM: RUNNING, GAMEOVER
-    gameState = "GAMEOVER"
 
     constructor(player, world) {
         this._Player = player;
@@ -61,14 +56,6 @@ class Game {
         this._onWindowResize();
 
         setInterval(() => this._tick(), 1000 / this.tps);
-
-        this._buttonNewGameElem.addEventListener("click", e => {
-            if (this.gameState !== "RUNNING") {
-                this._World.toggleGameOver(true);
-                this._Player._Virus.toggleSpawning(true);
-                this._buttonNewGameElem.disabled = true;
-            }
-        });
     }
 
     /**
@@ -113,30 +100,18 @@ class Game {
         this._successAudioElem.pause();
         this._successAudioElem.currentTime = 0;
         this._successAudioElem.play();
-        this._Player.setScore(1);
     }
 
     deleteScore() {
         this._failAudioElem.pause();
         this._failAudioElem.currentTime = 0;
         this._failAudioElem.play();
-        this._Player.setScore(-1);
-
-        if (this._Player.missed >= this._Player.maxMissed || this._Player.score < 0) {
-            this._World.toggleGameOver();
-            this._Player._Virus.toggleSpawning(false);
-            this.gameState === "GAMEOVER";
-            this._buttonNewGameElem.disabled = false;
-        }
     }
 }
 
 class Player {
 
     canvas = document.getElementById('canvas');
-    _scoreElem = document.getElementById('score');
-    _eliminatedElem = document.getElementById('eliminated');
-    _missedElem = document.getElementById('missed');
 
     keyboardSpeed = 10;
 
@@ -170,18 +145,6 @@ class Player {
             this.radio_input = radioElem.value;
             console.log("Input type changed to:", this.radio_input);
         }
-    }
-
-    setScore(add) {
-        this.score += add;
-        if (add > 0)
-            this.eliminated++;
-        if (add < 0)
-            this.missed++;
-
-        this._scoreElem.innerHTML = this.score;
-        this._eliminatedElem.innerHTML = this.eliminated;
-        this._missedElem.innerHTML = this.missed;
     }
 
     _listenToEvents() {
@@ -231,11 +194,7 @@ class Virus {
     _parentElem = document.getElementById('virusses');
     _virusElem = document.createElement("div");
 
-    _list = {};
-
-    _spawningEnabled = false;
-
-    _spawnRate = 2000;
+    _list = [];
 
     constructor(game) {
         this._Game = game;
@@ -247,27 +206,11 @@ class Virus {
         }
         this._virusElem.appendChild(clickableElem);
 
-        if (this._spawningEnabled)
-            this._spawner();
-    }
-
-    _spawner() {
-        setTimeout(() => {
-            if (!this._spawningEnabled)
-                return;
-            const x = randomNumber(this._Game.mapBoundary.minX, this._Game.mapBoundary.maxX + 15);
-            const y = randomNumber(this._Game.mapBoundary.minY, this._Game.mapBoundary.maxY - 13);
+        setInterval(() => {
+            const x = randomNumber(this._Game.mapBoundary.minX, this._Game.mapBoundary.maxX);
+            const y = randomNumber(this._Game.mapBoundary.minY, this._Game.mapBoundary.maxY);
             this.spawn(x, y);
-            console.log(this._spawnRate);
-            this._spawner();
-        }, --this._spawnRate);
-    }
-
-    toggleSpawning(enable) {
-        this._spawningEnabled = enable;
-        console.log("Virus spawning:", enable ? "enabled" : "disabled");
-        if (this._spawningEnabled)
-            this._spawner();
+        }, 2000);
     }
 
     spawn(x, y) {
@@ -275,19 +218,14 @@ class Virus {
         virusElem.style.left = x + "px";
         virusElem.style.top = y + "px";
         virusElem.id = this._list.length;
-        this._list[virusElem.id] = virusElem;
+        this._list.push(virusElem);
         this._parentElem.appendChild(virusElem);
-        this._autoHide(virusElem.id);
+        this._autoHide(virusElem);
     }
 
-    _autoHide(id) {
+    _autoHide(elem) {
         setTimeout(() => {
-            const elem = this._list[id];
-            if (!elem)
-                return;
-            this._Game.deleteScore();
-            elem.remove();
-            delete this._list[id];
+            elem.remove()
         }, 1000);
     }
 
@@ -295,14 +233,9 @@ class Virus {
      * Handling clicks on viruses
      */
     onClick(id) {
-        if (!this._spawningEnabled)
-            return;
         const elem = this._list[id];
-        if (!elem)
-            return;
         elem.remove();
         this._Game.addScore();
-        delete this._list[id];
     }
 }
 
@@ -314,8 +247,6 @@ class World {
     }
 
     toggleGameOver(hide = false) {
-        if (hide === false)
-            console.log("GAME OVER!");
         this._gameOverElem.style.display = hide ? "none" : "flex";
     }
 }

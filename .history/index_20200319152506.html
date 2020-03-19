@@ -11,14 +11,6 @@
 </head>
 
 <body onload="game.init()">
-    <audio id="successSound">
-        <!-- https://freesound.org/people/InspectorJ/sounds/484344/ -->
-        <source src="success.wav" type="audio/wav">
-    </audio>
-    <audio id="failSound">
-        <!-- https://freesound.org/people/LorenzoTheGreat/sounds/417794/ -->
-        <source src="fail.wav" type="audio/wav">
-    </audio>
     <div class="flex-container">
         <div class="flex-row" id="toolbar">
             <div class="col">
@@ -31,15 +23,12 @@
                 <label for="radio_mouse">MOUSE</label>
             </div>
             <div class="col scoreboard">
-                Score: <b><span id="score">0</span></b> | Virusses eleminated: <span id="eliminated">0</span> | Virusses missed: <span id="missed">0</span>/3
+                Score: <b><span id="score">0</span></b> | Virusses eleminated: <span id="eliminated">0</span> | Virusses missed: <span id="missed">0</span>
             </div>
         </div>
         <div class="flex-row" id="canvas" ondragstart="return false;" ondrop="return false;">
             <div id="target"></div>
             <div id="virusses">
-            </div>
-            <div id="gameOver">
-                GAME OVER
             </div>
         </div>
     </div>

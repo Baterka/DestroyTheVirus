@@ -66,6 +66,10 @@ button {
     border: 1px solid green;
 }
 
+.scoreboard {
+    color: red;
+}
+
 #target {
     z-index: -1;
     pointer-events: none;

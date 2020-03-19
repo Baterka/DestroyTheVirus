@@ -17,7 +17,6 @@ body,
 }
 
 #canvas {
-    z-index: 0;
     cursor: none;
     position: relative;
     width: calc(20px * 45);
@@ -54,16 +53,13 @@ button {
     color: black;
 }
 
-#button_newGame:disabled {
-    height: 25px;
-    border: 1px solid gray;
-    background-color: transparent;
-    color: gray;
-}
-
 #button_newGame {
     color: green;
     border: 1px solid green;
+}
+
+.scoreboard span {
+    color: red;
 }
 
 #target {
