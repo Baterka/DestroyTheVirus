@@ -67,7 +67,6 @@ class Game {
                 this._World.toggleGameOver(true);
                 this._Player._Virus.toggleSpawning(true);
                 this._buttonNewGameElem.disabled = true;
-                this._Player.resetScore()
             }
         });
     }
@@ -171,16 +170,6 @@ class Player {
             this.radio_input = radioElem.value;
             console.log("Input type changed to:", this.radio_input);
         }
-    }
-
-    resetScore() {
-        this.score = 0;
-        this.eliminated = 0;
-        this.missed = 0;
-
-        this._scoreElem.innerHTML = this.score;
-        this._eliminatedElem.innerHTML = this.eliminated;
-        this._missedElem.innerHTML = this.missed;
     }
 
     setScore(add) {
