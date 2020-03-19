@@ -2,6 +2,7 @@ class Game {
     html = document.getElementsByTagName('html')[0];
     canvas = document.getElementById('canvas');
     target = document.getElementById('target');
+    tps = 30;
 
     canvasOffset = {
         x: 0,
@@ -45,17 +46,22 @@ class Game {
 
         this._onWindowResize();
 
-        this.canvas.addEventListener('inputChange', e => {
-            let x = (e.clientX - this.canvasOffset.x);
-            let y = (e.clientY - this.canvasOffset.y);
+        setInterval(() => this._tick(), 1000 / this.tps);
+    }
 
-            // Allow "corner sliding"
-            x = (x > this.mapBoundary.minX ? (x < this.mapBoundary.maxX ? x : this.mapBoundary.maxX) : this.mapBoundary.minX)
-            y = (y > this.mapBoundary.minY ? (y < this.mapBoundary.maxY ? y : this.mapBoundary.maxY) : this.mapBoundary.minY)
+    /**
+     * Game tick
+     */
+    _tick() {
+        let x = (this.Player.pos.x - this.canvasOffset.x);
+        let y = (this.Player.pos.y - this.canvasOffset.y);
 
-            this.target.style.left = x + "px";
-            this.target.style.top = y + "px";
-        });
+        // Allow "corner sliding"
+        x = (x > this.mapBoundary.minX ? (x < this.mapBoundary.maxX ? x : this.mapBoundary.maxX) : this.mapBoundary.minX)
+        y = (y > this.mapBoundary.minY ? (y < this.mapBoundary.maxY ? y : this.mapBoundary.maxY) : this.mapBoundary.minY)
+
+        this.target.style.left = x + "px";
+        this.target.style.top = y + "px";
     }
 
     /**
@@ -84,12 +90,46 @@ class Game {
 
 class Player {
 
-    constructor(initialInputType) {
+    canvas = document.getElementById('canvas');
 
-        // ENUM: keyboard, mouse
-        this.radio_input = initialInputType
+    keyboardSpeed = 10;
 
-        console.log("Initial input type:", this.radio_input);
+    pos = {
+        x: 0,
+        y: 0
+    }
+
+    constructor(radioElem) {
+        this.changeInput(radioElem);
+
+        this.canvas.addEventListener("mousemove", e => {
+            if (this.radio_input !== 'mouse')
+                return;
+
+            this.pos = { x: e.clientX, y: e.clientY };
+        });
+        document.addEventListener("keydown", e => {
+            if (this.radio_input !== 'keyboard')
+                return;
+
+            switch (e.key) {
+                case "w":
+                    this.pos.y -= this.keyboardSpeed;
+                    break;
+                case "s":
+                    this.pos.y += this.keyboardSpeed;
+                    break;
+                case "a":
+                    this.pos.x -= this.keyboardSpeed;
+                    break;
+                case "d":
+                    this.pos.x += this.keyboardSpeed;
+                    break;
+                default:
+                    console.log("Undefined key pressed:", e.key);
+                    break;
+            }
+        });
     }
 
     changeInput(radioElem) {
@@ -100,5 +140,5 @@ class Player {
     }
 }
 
-const player = new Player(document.querySelector('input[name="input"]:checked').value);
+const player = new Player(document.querySelector('input[name="input"]:checked'));
 const game = new Game(player);
