@@ -1,5 +1,5 @@
 const randomNumber = (min, max) => {
-    return Math.floor((Math.random() * max) + min);
+    return Math.floor((Math.random() * (max - min + 1)) + min);
 }
 
 class Audio {
@@ -47,7 +47,7 @@ class Game {
     // ENUM: RUNNING, GAMEOVER
     gameState = "GAMEOVER"
 
-    constructor() {}
+    constructor() { }
 
     /**
      * Called after DOM rendered
@@ -63,9 +63,11 @@ class Game {
 
     /**
      * Game tick
+     * Originally designed for whole game, but now
+     * only keyboard handler is inside tick
      */
     _tick() {
-        // Legacy (I used event handlers instead)
+        this.Player.keyboardTick();
     }
 
     addScore() {
@@ -79,6 +81,47 @@ class Game {
 
         this.World.inceraseDeadZone();
     }
+
+    gameOver() {
+        console.log("GAME OVER");
+        this.gameState = "GAMEOVER";
+        this.World.toggleGameOver(true);
+        this.Virus.toggleSpawning(false);
+        this.Player.toggleNewGameButton(true);
+        this.Player.toggleResetGameButton(false);
+    }
+
+    newGame() {
+        console.log("NEW GAME");
+        this.gameState = "RUNNING";
+        this.World.toggleGameOver(false);
+        this.World.resetDeadZone();
+        this.Player.resetScore();
+        this.Virus.toggleSpawning(true);
+        this.Player.toggleNewGameButton(false);
+        this.Player.toggleStopGameButton(true);
+        this.Player.toggleResetGameButton(true);
+    }
+
+    gameOver() {
+        console.log("GAME OVER");
+        this.gameState = "GAMEOVER";
+        if (this.Player.score > localStorage.getItem('highScore'))
+            localStorage.setItem('highScore', this.Player.score);
+        this.World.toggleGameOver(true);
+        this.Virus.toggleSpawning(false);
+        this.Player.toggleNewGameButton(true);
+        this.Player.toggleStopGameButton(false);
+        this.Player.toggleResetGameButton(false);
+    }
+
+    resetGame() {
+        console.log("RESTART GAME");
+        this.Virus.toggleSpawning(false);
+        this.World.resetDeadZone();
+        this.Player.resetScore();
+        this.Virus.toggleSpawning(true);
+    }
 }
 
 /**
@@ -89,10 +132,14 @@ class Player {
     _eliminatedElem = document.getElementById('eliminated');
     _missedElem = document.getElementById('missed');
     _buttonNewGameElem = document.getElementById('button_newGame');
+    _buttonResetGameElem = document.getElementById('button_resetGame');
+    _buttonStopGameElem = document.getElementById('button_stopGame');
+
+    // _debugDotElem = document.getElementById('debugDot');
 
     keyboardSpeed = 10;
 
-    pos = {
+    cursorPosition = {
         x: 0,
         y: 0
     }
@@ -102,6 +149,8 @@ class Player {
     missed = 0;
 
     maxMissed = 3;
+
+    _pressedKeys = {};
 
     constructor(game, radioElem) {
         // Reference to Game controller
@@ -113,6 +162,17 @@ class Player {
         this._listenToEvents();
     }
 
+    toggleNewGameButton(visible) {
+        this._buttonNewGameElem.disabled = !visible;
+    }
+
+    toggleResetGameButton(visible) {
+        this._buttonResetGameElem.disabled = !visible;
+    }
+
+    toggleStopGameButton(visible) {
+        this._buttonStopGameElem.disabled = !visible;
+    }
 
     setVirus(virus) {
         this._Virus = virus;
@@ -150,12 +210,18 @@ class Player {
     _listenToEvents() {
 
         this._buttonNewGameElem.addEventListener("click", e => {
-            if (this.gameState !== "RUNNING") {
-                this._Game.World.toggleGameOver(true);
-                this._Game.Player.Virus.toggleSpawning(true);
-                this._buttonNewGameElem.disabled = true;
-                this._Game.Player.resetScore()
-            }
+            if (this._Game.gameState === "GAMEOVER")
+                this._Game.newGame();
+        });
+
+        this._buttonResetGameElem.addEventListener("click", e => {
+            if (this._Game.gameState === "RUNNING")
+                this._Game.resetGame();
+        });
+
+        this._buttonStopGameElem.addEventListener("click", e => {
+            if (this._Game.gameState === "RUNNING")
+                this._Game.gameOver();
         });
 
         /**
@@ -167,44 +233,48 @@ class Player {
                 return;
 
             this._Game.World.moveTarget(e.clientX, e.clientY);
+            this.cursorPosition = { x: e.clientX, y: e.clientY }
         });
 
-        /**
-         * Why not just listen on 'this._Game.World.canvas'?
-         * Answer: Same as above!
-         */
-        document.addEventListener("click", e => {
+        this._Game.World.canvas.addEventListener("click", e => {
             const parent = e.target.parentElement;
             if (parent.className == 'virus') {
                 console.log("Clicked on virus ID:", parent.id);
-                if (!this._Virus)
-                    return console.error("Virus Manager is not attached. Cannot call onClick action!");
-                this._Virus.onClick(parent.id);
+                this._Game.Virus.onClick(parent.id);
             }
         });
 
         document.addEventListener("keydown", e => {
             if (this.radio_input !== 'keyboard')
                 return;
+            this._pressedKeys[event.key] = true;
 
-            switch (e.key) {
-                case "w":
-                    this.pos.y -= this.keyboardSpeed;
-                    break;
-                case "s":
-                    this.pos.y += this.keyboardSpeed;
-                    break;
-                case "a":
-                    this.pos.x -= this.keyboardSpeed;
-                    break;
-                case "d":
-                    this.pos.x += this.keyboardSpeed;
-                    break;
-                default:
-                    console.log("Undefined key pressed:", e.key);
-                    break;
-            }
+            if (event.keyCode === 32)
+                document.elementFromPoint(this.cursorPosition.x, this.cursorPosition.y).click();
         });
+
+        document.addEventListener("keyup", e => {
+            delete this._pressedKeys[event.key];
+        });
+    }
+
+    keyboardTick() {
+        if (!Object.keys(this._pressedKeys).length)
+            return;
+
+        if (this._pressedKeys["w"] && this.cursorPosition.y > this._Game.World.canvasBoundary.minY + this._Game.World.targetDimension.height / 2)
+            this.cursorPosition.y -= this.keyboardSpeed;
+        if (this._pressedKeys["s"] && this.cursorPosition.y < this._Game.World.canvasBoundary.maxY - this._Game.World.targetDimension.height / 2)
+            this.cursorPosition.y += this.keyboardSpeed;
+        if (this._pressedKeys["a"] && this.cursorPosition.x > this._Game.World.canvasBoundary.minX + this._Game.World.targetDimension.width / 2)
+            this.cursorPosition.x -= this.keyboardSpeed;
+        if (this._pressedKeys["d"] && this.cursorPosition.x < this._Game.World.canvasBoundary.maxX - this._Game.World.targetDimension.width / 2)
+            this.cursorPosition.x += this.keyboardSpeed;
+
+        // this._debugDotElem.style.top = this.cursorPosition.y + "px";
+        // this._debugDotElem.style.left = this.cursorPosition.x + "px";
+
+        this._Game.World.moveTarget(this.cursorPosition.x, this.cursorPosition.y);
     }
 }
 
@@ -212,11 +282,15 @@ class Virus {
     _parentElem = document.getElementById('virusses');
     _virusElem = document.createElement("div");
 
+    _currentId = 0;
     _list = {};
 
-    _spawningEnabled = true;
+    _spawningEnabled = false;
 
-    _spawnRate = 200;
+    _spawnRate = 2000;
+    hideSpeed = 1000;
+
+    _spawnerTimer = null;
 
     constructor(game) {
         // Reference to Game controller
@@ -235,11 +309,10 @@ class Virus {
     }
 
     _spawner() {
-        setTimeout(() => {
-            if (!this._spawningEnabled)
-                return;
-            const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX + 15);
-            const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 13);
+        this._spawnRate -= 10;
+        this._spawnerTimer = setTimeout(() => {
+            const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX - 48);
+            const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 76);
             this.spawn(x, y);
             this._spawner();
         }, this._spawnRate);
@@ -250,13 +323,20 @@ class Virus {
         console.log("Virus spawning:", enable ? "enabled" : "disabled");
         if (this._spawningEnabled)
             this._spawner();
+        else {
+            for (let key in this._list) {
+                this._list[key].remove();
+                delete this._list[key];
+            }
+            clearTimeout(this._spawnerTimer);
+        }
     }
 
     spawn(x, y) {
         const virusElem = this._virusElem.cloneNode(true);
         virusElem.style.left = x + "px";
         virusElem.style.top = y + "px";
-        virusElem.id = this._list.length;
+        virusElem.id = this._currentId++;
         this._list[virusElem.id] = virusElem;
         this._parentElem.appendChild(virusElem);
         this._autoHide(virusElem.id);
@@ -270,7 +350,7 @@ class Virus {
             this._Game.deleteScore();
             elem.remove();
             delete this._list[id];
-        }, 1000);
+        }, this.hideSpeed);
     }
 
     /**
@@ -300,11 +380,12 @@ class World {
 
     // DeadZone
     _deadZoneElem = document.getElementById("deadZone");
-    _deadZoneWidth = 0;
-
+    deadZoneWidth = 870;
 
     // GameOver
     _gameOverElem = document.getElementById("gameOver");
+    _highScoreElem = document.getElementById("highScore");
+    _newRecordElem = document.getElementById("newRecord");
 
     constructor() {
         // Reference to Game controller
@@ -327,44 +408,62 @@ class World {
         this.canvasBoundary = {
             minX: this._canvasOffset.x,
             minY: this._canvasOffset.y,
-            maxX: this._canvasRect.width - this._canvasOffset.x,
-            maxY: this._canvasRect.height - this._canvasOffset.y
+            maxX: this._canvasRect.width + this._canvasOffset.x,
+            maxY: this._canvasRect.height + this._canvasOffset.y
         }
+        console.log(this.canvasBoundary);
     }
 
     moveTarget(x, y) {
-        x -= this.canvasOffset.x - this.targetDimension.width / 2;
-        y -= this.canvasOffset.y - this.targetDimension.height / 2;;
+        // Compensate canvas offset and target size
+        x -= this._canvasOffset.x + this.targetDimension.width / 2;
+        y -= this._canvasOffset.y + this.targetDimension.height / 2;
 
-        // Allow "corner sliding"
-        x = (x > this.canvasBoundary.minX ? (x < this.canvasBoundary.maxX - this.targetDimension.width ? x : this.canvasBoundary.maxX - this.targetDimension.width) : this.canvasBoundary.minX)
-        y = (y > this.canvasBoundary.minY ? (y < this.canvasBoundary.maxY - this.targetDimension.height ? y : this.canvasBoundary.maxY - this.targetDimension.height) : this.canvasBoundary.minY)
+        // Block escaping from canvas
+        x = (x > 0 ? (x < this._canvasRect.width - this.targetDimension.width ? x : this._canvasRect.width - this.targetDimension.width) : 0)
+        y = (y > 0 ? (y < this._canvasRect.height - this.targetDimension.height ? y : this._canvasRect.height - this.targetDimension.height) : 0)
 
         this._target.style.left = x + "px";
         this._target.style.top = y + "px";
     }
 
+    resetDeadZone() {
+        this.deadZoneWidth = 0;
+        this._setDeadZone();
+    }
+
     inceraseDeadZone(count = 10) {
-        this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
-            this._deadZoneElem.style.display = "block";
+
+        if (this.deadZoneWidth + count >= this._canvasRect.width) {
+            this.deadZoneWidth = this._canvasRect.width + 1;
+            this._Game.gameOver();
+        } else
+            this.deadZoneWidth += count
+        this._setDeadZone();
+    }
+
+    _setDeadZone() {
+        this._deadZoneElem.style.right = (this._canvasRect.width - this.deadZoneWidth) + "px";
+        this._deadZoneElem.style.display = this.deadZoneWidth > 0 ? "block" : "none";
 
     }
 
     toggleGameOver(visible) {
-        this._gameOverElem.style.display = visible ? "none" : "flex";
+        const highScore = localStorage.getItem('highScore');
+        this._highScoreElem.innerHTML = highScore;
+        this._gameOverElem.style.display = !visible ? "none" : "flex";
+        this._newRecordElem.style.display = highScore > this._Game.Player.score ? "none" : "block";
     }
 
     /**
      * Called on window resize (if not resized for more than 50ms to avoid lag)
      */
     _onWindowResize() {
-        this.canvasOffset = {
-            x: this.canvas.offsetLeft + this.targetDimension.width,
-            y: this.canvas.offsetTop + this.targetDimension.height
+        this._canvasOffset = {
+            x: this.canvas.offsetLeft,
+            y: this.canvas.offsetTop
         }
-        console.log("Window resized! New cancas offset:", this.canvasOffset);
+        console.log("Window resized! New canvas offset:", this._canvasOffset);
     }
 
     /**

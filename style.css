@@ -9,6 +9,10 @@ body,
     height: 100%;
 }
 
+h1{
+    margin-top: 10px;
+}
+
 .flex-container {
     display: flex;
     justify-content: center;
@@ -49,21 +53,16 @@ body,
 
 button {
     height: 25px;
-    border: 1px solid black;
     background-color: transparent;
-    color: black;
-}
-
-#button_newGame:disabled {
-    height: 25px;
-    border: 1px solid gray;
-    background-color: transparent;
-    color: gray;
-}
-
-#button_newGame {
     color: green;
     border: 1px solid green;
+}
+
+button:disabled {
+    border: 1px solid gray;
+    background-color: lightgray;
+    color: gray;
+    display: none;
 }
 
 #target {
@@ -100,13 +99,13 @@ button {
 }
 
 #deadZone {
-    z-index: 0;
+    z-index: -3;
     display: none;
     position: absolute;
     top: 0;
     left: 0;
     right: 100%;
-    bottom: 0;
+    bottom: -1px; /* Fix to weird part-pixel bug */
     background-color: rgba(255, 0, 0, 0.5);
     border-right: 1px solid red;
 }
@@ -114,18 +113,26 @@ button {
 #gameOver {
     z-index: 0;
     display: none;
-    height: 100%;
+    height: 100%;   
     align-items: center;
     justify-content: center;
+    flex-direction: column;
     background-color: rgba(0, 0, 0, .9);
+    color: white;
+}
+
+#gameOver .title{
     color: red;
     font-weight: bold;
     font-size: 50px;
 }
 
+#gameOver .newRecord{
+    display: none;
+}
+
 
 /* https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
-
 .noselect {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -133,4 +140,24 @@ button {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+/* https://rainbowcoding.com/2011/12/02/how-to-create-rainbow-text-in-html-css-javascript/ */
+.rainbow {
+  background-image: -webkit-gradient( linear, left top, right top, color-stop(0, #f22), color-stop(0.15, #f2f), color-stop(0.3, #22f), color-stop(0.45, #2ff), color-stop(0.6, #2f2),color-stop(0.75, #2f2), color-stop(0.9, #ff2), color-stop(1, #f22) );
+  background-image: gradient( linear, left top, right top, color-stop(0, #f22), color-stop(0.15, #f2f), color-stop(0.3, #22f), color-stop(0.45, #2ff), color-stop(0.6, #2f2),color-stop(0.75, #2f2), color-stop(0.9, #ff2), color-stop(1, #f22) );
+  color:transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+#debugDot{
+    z-index: 100;
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    top:0;
+    left: 0;
+    background-color: green;
+    border-radius: 5px;
 }
