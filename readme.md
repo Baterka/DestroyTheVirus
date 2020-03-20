@@ -1,5 +1,5 @@
 
-# KAJ-HW
+# DestroyTheVirus
 Homework for the subject **[B0B39KAJ](https://www.fel.cvut.cz/cz/education/bk/predmety/31/32/p3132206.html)** on **[FEE CTU](https://www.fel.cvut.cz/)** in summer semester 2020.
 
 # Task
