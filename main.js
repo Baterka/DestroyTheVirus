@@ -476,7 +476,10 @@ class World {
             }
         }
 
-        this.loader.style.display = "none";
+        // Fake delay to show loader littlebit longer
+        delay(500).then(() => {
+            this.loader.style.display = "none";
+        })
 
         this._canvasRect = this.canvas.getBoundingClientRect();
         this.canvasDimension = {
