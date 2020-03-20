@@ -411,15 +411,15 @@ class Virus {
         this._autoHide(virusElem.id);
     }
 
-    _autoHide(id) {
-        delay(this.hideSpeed).then(() => {
-            const elem = this._list[id];
-            if (!elem)
-                return;
-            this._Game.deleteScore();
-            elem.remove();
-            delete this._list[id];
-        });
+    async _autoHide(id) {
+        await delay(this.hideSpeed);
+
+        const elem = this._list[id];
+        if (!elem)
+            return;
+        this._Game.deleteScore();
+        elem.remove();
+        delete this._list[id];
     }
 
     /**

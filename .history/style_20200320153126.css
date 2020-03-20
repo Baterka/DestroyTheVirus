@@ -196,7 +196,10 @@ button:disabled {
     bottom: 0;
     right: 0;
     left: 0;
-    background-color: rgba(100, 0, 0, 0.95);
+    background-color: rgba(255, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-content: center;
 }
 
 
@@ -210,6 +213,7 @@ button:disabled {
 }
 
 .loader {
+    margin: 60px auto;
     font-size: 10px;
     position: relative;
     text-indent: -9999em;

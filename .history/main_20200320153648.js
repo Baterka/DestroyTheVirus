@@ -411,7 +411,7 @@ class Virus {
         this._autoHide(virusElem.id);
     }
 
-    _autoHide(id) {
+    async _autoHide(id) {
         delay(this.hideSpeed).then(() => {
             const elem = this._list[id];
             if (!elem)
