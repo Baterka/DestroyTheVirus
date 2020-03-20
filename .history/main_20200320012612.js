@@ -4,8 +4,6 @@ const randomNumber = (min, max) => {
 
 class Audio {
 
-    globalVolume = 0.25;
-
     _sources = {
         // https://freesound.org/people/InspectorJ/sounds/484344/
         success: "./success.wav",
@@ -18,7 +16,7 @@ class Audio {
     constructor() {
         for (let key in this._sources) {
             this.tracks[key] = document.createElement("audio");
-            this.tracks[key].volume = this.globalVolume;
+            this.tracks[key].volume = 0.25;
             this.tracks[key].src = this._sources[key];
             console.log(`[AUDIO] Source '${key}' loaded.`);
         }
@@ -216,7 +214,7 @@ class Virus {
 
     _spawningEnabled = true;
 
-    _spawnRate = 200;
+    _spawnRate = 500;
 
     constructor(game) {
         // Reference to Game controller
@@ -241,8 +239,9 @@ class Virus {
             const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX + 15);
             const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 13);
             this.spawn(x, y);
+            console.log(this._spawnRate);
             this._spawner();
-        }, this._spawnRate);
+        }, --this._spawnRate);
     }
 
     toggleSpawning(enable) {
@@ -300,7 +299,8 @@ class World {
 
     // DeadZone
     _deadZoneElem = document.getElementById("deadZone");
-    _deadZoneWidth = 0;
+    _deadZonePixels = 0; // 10px per missed virus
+    _deadZoneWidth = 0; // Depending on canvas
 
 
     // GameOver
@@ -345,11 +345,8 @@ class World {
     }
 
     inceraseDeadZone(count = 10) {
-        this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
-            this._deadZoneElem.style.display = "block";
-
+        this._deadZonePixels += count;
+        this._deadZoneWidth = this._deadZonePixels % this._canvasRect.height;
     }
 
     toggleGameOver(visible) {

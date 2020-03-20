@@ -18,7 +18,7 @@ body,
 
 #canvas {
     z-index: 0;
-    /* cursor: none; */
+    cursor: none;
     position: relative;
     width: calc(20px * 45);
     height: calc(13px * 45);
@@ -70,7 +70,6 @@ button {
     z-index: -1;
     pointer-events: none;
     position: absolute;
-    display: none;
     top: 0;
     left: 0;
     width: 64px;
@@ -100,15 +99,13 @@ button {
 }
 
 #deadZone {
-    z-index: 0;
-    display: none;
+    z-index: -2;
     position: absolute;
     top: 0;
     left: 0;
-    right: 100%;
-    bottom: 0;
-    background-color: rgba(255, 0, 0, 0.5);
-    border-right: 1px solid red;
+    width: 46px;
+    height: 75px;
+    background-color: rgba(255, 0, 0, 0.7);
 }
 
 #gameOver {
@@ -121,16 +118,4 @@ button {
     color: red;
     font-weight: bold;
     font-size: 50px;
-}
-
-
-/* https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
-
-.noselect {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }

@@ -18,7 +18,7 @@ body,
 
 #canvas {
     z-index: 0;
-    /* cursor: none; */
+    cursor: none;
     position: relative;
     width: calc(20px * 45);
     height: calc(13px * 45);
@@ -101,7 +101,6 @@ button {
 
 #deadZone {
     z-index: 0;
-    display: none;
     position: absolute;
     top: 0;
     left: 0;
@@ -121,16 +120,4 @@ button {
     color: red;
     font-weight: bold;
     font-size: 50px;
-}
-
-
-/* https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
-
-.noselect {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }

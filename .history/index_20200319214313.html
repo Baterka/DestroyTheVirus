@@ -11,6 +11,14 @@
 </head>
 
 <body onload="game.init()">
+    <audio id="successSound">
+        <!-- https://freesound.org/people/InspectorJ/sounds/484344/ -->
+        <source src="success.wav" type="audio/wav">
+    </audio>
+    <audio id="failSound">
+        <!-- https://freesound.org/people/LorenzoTheGreat/sounds/417794/ -->
+        <source src="fail.wav" type="audio/wav">
+    </audio>
     <div class="flex-container">
         <div class="flex-row" id="toolbar">
             <div class="col">
@@ -30,7 +38,7 @@
             <div id="target"></div>
             <div id="virusses">
             </div>
-            <div id="gameOver" class="noselect">
+            <div id="gameOver">
                 GAME OVER
             </div>
             <div id="deadZone"></div>

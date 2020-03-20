@@ -300,7 +300,8 @@ class World {
 
     // DeadZone
     _deadZoneElem = document.getElementById("deadZone");
-    _deadZoneWidth = 0;
+    _deadZonePixels = 0; // 10px per missed virus
+    _deadZoneWidth = 0; // Depending on canvas
 
 
     // GameOver
@@ -345,9 +346,10 @@ class World {
     }
 
     inceraseDeadZone(count = 10) {
-        this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
+        this._deadZonePixels += count;
+        const width = this._deadZonePixels % this._canvasRect.height;
+        this._deadZoneElem.style.right = this._canvasRect.width - width;
+        if (width > 0)
             this._deadZoneElem.style.display = "block";
 
     }

@@ -2,93 +2,115 @@ const randomNumber = (min, max) => {
     return Math.floor((Math.random() * max) + min);
 }
 
-class Audio {
-
-    globalVolume = 0.25;
-
-    _sources = {
+class AudioController {
+    _audioTracks = {
         // https://freesound.org/people/InspectorJ/sounds/484344/
         success: "./success.wav",
         // https://freesound.org/people/LorenzoTheGreat/sounds/417794/
         fail: "./fail.wav"
     }
-
-    tracks = {};
+    _audioElem = document.getElementById("audioSource");
 
     constructor() {
-        for (let key in this._sources) {
-            this.tracks[key] = document.createElement("audio");
-            this.tracks[key].volume = this.globalVolume;
-            this.tracks[key].src = this._sources[key];
-            console.log(`[AUDIO] Source '${key}' loaded.`);
-        }
+        this._audioElem.src = this._audioTracks.fail;
     }
 
-    play(track) {
-        if (!track)
-            console.error(`[AUDIO] Source '${name}' does not exist.`);
-        track.currentTime = 0;
-        track.play();
+    play(name) {
+        if (this._audioTracks[name]) {
+            this._audioElem.pause();
+            this._audioElem.play();
+        } else
+            console.error(`Audio track '${name}' does not exist.`);
     }
 }
 
 class Game {
+
+
     // Will be loaded after DOM will be rendered
-    World = null;
-    Player = null;
-    Virus = null;
+    _World = null;
+    _Player = null;
+    _Virus = null;
 
     // Audio
-    _Audio = new Audio();
+    _Audio = new AudioController();
 
-    // Ticks per second (frames-per-second)
+
+    _buttonNewGameElem = document.getElementById('button_newGame');
+
     tps = 60;
+
 
     // ENUM: RUNNING, GAMEOVER
     gameState = "GAMEOVER"
 
-    constructor() {}
+    constructor() {
+        //setInterval(() => this._tick(), 1000 / this.tps);
+
+        setInterval(() => this._Audio.play("fail"), 300);
+    }
 
     /**
      * Called after DOM rendered
      */
     init() {
-        this.World = new World(this);
-        this.Player = new Player(this, document.querySelector('input[name="input"]:checked'));
-        this.Virus = new Virus(this);
+        this._World = new World(this);
+        this._Player = new Player(this, document.querySelector('input[name="input"]:checked'));
+        this._Virus = new Virus(this);
 
-        // Game tick
-        setInterval(() => this._tick(), 1000 / this.tps);
+        this._buttonNewGameElem.addEventListener("click", e => {
+            if (this.gameState !== "RUNNING") {
+                this._World.toggleGameOver(true);
+                this._Player._Virus.toggleSpawning(true);
+                this._buttonNewGameElem.disabled = true;
+                this._Player.resetScore()
+            }
+        });
     }
 
     /**
      * Game tick
      */
     _tick() {
-        // Legacy (I used event handlers instead)
+        let x = (this._Player.pos.x - this.canvasOffset.x);
+        let y = (this._Player.pos.y - this.canvasOffset.y);
+
+        // Allow "corner sliding"
+        x = (x > this.mapBoundary.minX ? (x < this.mapBoundary.maxX ? x : this.mapBoundary.maxX) : this.mapBoundary.minX)
+        y = (y > this.mapBoundary.minY ? (y < this.mapBoundary.maxY ? y : this.mapBoundary.maxY) : this.mapBoundary.minY)
+
+        this.target.style.left = x + "px";
+        this.target.style.top = y + "px";
     }
 
     addScore() {
-        this._Audio.play(this._Audio.tracks.success);
-        this.Player.setScore(1);
+        this._successAudioElem.pause();
+        this._successAudioElem.currentTime = 0;
+        this._successAudioElem.play();
+        this._Player.setScore(1);
     }
 
     deleteScore() {
-        this._Audio.play(this._Audio.tracks.fail);
-        this.Player.setScore(-1);
+        this._failAudioElem.pause();
+        this._failAudioElem.currentTime = 0;
+        this._failAudioElem.play();
+        this._Player.setScore(-1);
 
-        this.World.inceraseDeadZone();
+        if (this._Player.missed >= this._Player.maxMissed || this._Player.score < 0) {
+            this._World.toggleGameOver();
+            this._Player._Virus.toggleSpawning(false);
+            this.gameState === "GAMEOVER";
+            this._buttonNewGameElem.disabled = false;
+        }
     }
 }
 
-/**
- * Input and score handler
- */
 class Player {
+
+    canvas = document.getElementById('canvas');
     _scoreElem = document.getElementById('score');
     _eliminatedElem = document.getElementById('eliminated');
     _missedElem = document.getElementById('missed');
-    _buttonNewGameElem = document.getElementById('button_newGame');
 
     keyboardSpeed = 10;
 
@@ -102,6 +124,8 @@ class Player {
     missed = 0;
 
     maxMissed = 3;
+
+
 
     constructor(game, radioElem) {
         // Reference to Game controller
@@ -148,32 +172,14 @@ class Player {
     }
 
     _listenToEvents() {
-
-        this._buttonNewGameElem.addEventListener("click", e => {
-            if (this.gameState !== "RUNNING") {
-                this._Game.World.toggleGameOver(true);
-                this._Game.Player.Virus.toggleSpawning(true);
-                this._buttonNewGameElem.disabled = true;
-                this._Game.Player.resetScore()
-            }
-        });
-
-        /**
-         * Why not just listen on 'this._Game.World.canvas'?
-         * Answer: Because I like sliding around corners!
-         */
-        document.addEventListener("mousemove", e => {
+        this.canvas.addEventListener("mousemove", e => {
             if (this.radio_input !== 'mouse')
                 return;
 
-            this._Game.World.moveTarget(e.clientX, e.clientY);
+            this.pos = { x: e.clientX, y: e.clientY };
         });
 
-        /**
-         * Why not just listen on 'this._Game.World.canvas'?
-         * Answer: Same as above!
-         */
-        document.addEventListener("click", e => {
+        this.canvas.addEventListener("click", e => {
             const parent = e.target.parentElement;
             if (parent.className == 'virus') {
                 console.log("Clicked on virus ID:", parent.id);
@@ -214,9 +220,9 @@ class Virus {
 
     _list = {};
 
-    _spawningEnabled = true;
+    _spawningEnabled = false;
 
-    _spawnRate = 200;
+    _spawnRate = 2000;
 
     constructor(game) {
         // Reference to Game controller
@@ -238,11 +244,12 @@ class Virus {
         setTimeout(() => {
             if (!this._spawningEnabled)
                 return;
-            const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX + 15);
-            const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 13);
+            const x = randomNumber(this._Game.mapBoundary.minX, this._Game.mapBoundary.maxX + 15);
+            const y = randomNumber(this._Game.mapBoundary.minY, this._Game.mapBoundary.maxY - 13);
             this.spawn(x, y);
+            console.log(this._spawnRate);
             this._spawner();
-        }, this._spawnRate);
+        }, --this._spawnRate);
     }
 
     toggleSpawning(enable) {
@@ -289,7 +296,7 @@ class Virus {
 }
 
 class World {
-    canvas = document.getElementById('canvas');
+    _canvas = document.getElementById('canvas');
 
     _target = document.getElementById('target');
 
@@ -298,10 +305,15 @@ class World {
         y: 0
     }
 
+    _targetRect = this._target.getBoundingClientRect();
+    _targetDimensions = {
+        width: this._targetRect.width,
+        height: this._targetRect.height
+    }
+
     // DeadZone
     _deadZoneElem = document.getElementById("deadZone");
     _deadZoneWidth = 0;
-
 
     // GameOver
     _gameOverElem = document.getElementById("gameOver");
@@ -310,45 +322,14 @@ class World {
         // Reference to Game controller
         this._Game = game;
 
-        this._target.style.display = "block";
-        this._targetRect = this._target.getBoundingClientRect();
-        this.targetDimension = {
-            width: this._targetRect.width,
-            height: this._targetRect.height
-        }
-
         window.addEventListener("resize", () => {
             this._debounceResize(this._onWindowResize.bind(this))
         });
 
         this._onWindowResize();
-
-        this._canvasRect = this.canvas.getBoundingClientRect();
-        this.canvasBoundary = {
-            minX: this._canvasOffset.x,
-            minY: this._canvasOffset.y,
-            maxX: this._canvasRect.width - this._canvasOffset.x,
-            maxY: this._canvasRect.height - this._canvasOffset.y
-        }
     }
 
-    moveTarget(x, y) {
-        x -= this.canvasOffset.x - this.targetDimension.width / 2;
-        y -= this.canvasOffset.y - this.targetDimension.height / 2;;
-
-        // Allow "corner sliding"
-        x = (x > this.canvasBoundary.minX ? (x < this.canvasBoundary.maxX - this.targetDimension.width ? x : this.canvasBoundary.maxX - this.targetDimension.width) : this.canvasBoundary.minX)
-        y = (y > this.canvasBoundary.minY ? (y < this.canvasBoundary.maxY - this.targetDimension.height ? y : this.canvasBoundary.maxY - this.targetDimension.height) : this.canvasBoundary.minY)
-
-        this._target.style.left = x + "px";
-        this._target.style.top = y + "px";
-    }
-
-    inceraseDeadZone(count = 10) {
-        this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
-            this._deadZoneElem.style.display = "block";
+    inceraseDeadZone() {
 
     }
 
@@ -361,8 +342,8 @@ class World {
      */
     _onWindowResize() {
         this.canvasOffset = {
-            x: this.canvas.offsetLeft + this.targetDimension.width,
-            y: this.canvas.offsetTop + this.targetDimension.height
+            x: this._canvas.offsetLeft + this._targetDimensions.width,
+            y: this._canvas.offsetTop + this._targetDimensions.height
         }
         console.log("Window resized! New cancas offset:", this.canvasOffset);
     }

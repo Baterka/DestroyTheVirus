@@ -2,9 +2,7 @@ const randomNumber = (min, max) => {
     return Math.floor((Math.random() * max) + min);
 }
 
-class Audio {
-
-    globalVolume = 0.25;
+class AudioController {
 
     _sources = {
         // https://freesound.org/people/InspectorJ/sounds/484344/
@@ -18,7 +16,6 @@ class Audio {
     constructor() {
         for (let key in this._sources) {
             this.tracks[key] = document.createElement("audio");
-            this.tracks[key].volume = this.globalVolume;
             this.tracks[key].src = this._sources[key];
             console.log(`[AUDIO] Source '${key}' loaded.`);
         }
@@ -39,9 +36,8 @@ class Game {
     Virus = null;
 
     // Audio
-    _Audio = new Audio();
+    _Audio = new AudioController();
 
-    // Ticks per second (frames-per-second)
     tps = 60;
 
     // ENUM: RUNNING, GAMEOVER
@@ -58,14 +54,14 @@ class Game {
         this.Virus = new Virus(this);
 
         // Game tick
-        setInterval(() => this._tick(), 1000 / this.tps);
+        //setInterval(() => this._tick(), 1000 / this.tps)
     }
 
     /**
      * Game tick
      */
     _tick() {
-        // Legacy (I used event handlers instead)
+
     }
 
     addScore() {
@@ -75,9 +71,14 @@ class Game {
 
     deleteScore() {
         this._Audio.play(this._Audio.tracks.fail);
-        this.Player.setScore(-1);
+        this._Game._Player.setScore(-1);
 
-        this.World.inceraseDeadZone();
+        if (this.Player.missed >= this.Player.maxMissed || this.Player.score < 0) {
+            this.World.toggleGameOver();
+            this.Player._Virus.toggleSpawning(false);
+            this.gameState === "GAMEOVER";
+            this._buttonNewGameElem.disabled = false;
+        }
     }
 }
 
@@ -102,6 +103,8 @@ class Player {
     missed = 0;
 
     maxMissed = 3;
+
+
 
     constructor(game, radioElem) {
         // Reference to Game controller
@@ -214,9 +217,9 @@ class Virus {
 
     _list = {};
 
-    _spawningEnabled = true;
+    _spawningEnabled = false;
 
-    _spawnRate = 200;
+    _spawnRate = 2000;
 
     constructor(game) {
         // Reference to Game controller
@@ -232,17 +235,20 @@ class Virus {
 
         if (this._spawningEnabled)
             this._spawner();
+
+        this.spawn(0, 0);
     }
 
     _spawner() {
         setTimeout(() => {
             if (!this._spawningEnabled)
                 return;
-            const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX + 15);
-            const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 13);
+            const x = randomNumber(this._Game._canvasBoundary.minX, this._Game._canvasBoundary.maxX + 15);
+            const y = randomNumber(this._Game._canvasBoundary.minY, this._Game._canvasBoundary.maxY - 13);
             this.spawn(x, y);
+            console.log(this._spawnRate);
             this._spawner();
-        }, this._spawnRate);
+        }, --this._spawnRate);
     }
 
     toggleSpawning(enable) {
@@ -302,7 +308,6 @@ class World {
     _deadZoneElem = document.getElementById("deadZone");
     _deadZoneWidth = 0;
 
-
     // GameOver
     _gameOverElem = document.getElementById("gameOver");
 
@@ -324,7 +329,7 @@ class World {
         this._onWindowResize();
 
         this._canvasRect = this.canvas.getBoundingClientRect();
-        this.canvasBoundary = {
+        this._canvasBoundary = {
             minX: this._canvasOffset.x,
             minY: this._canvasOffset.y,
             maxX: this._canvasRect.width - this._canvasOffset.x,
@@ -337,18 +342,14 @@ class World {
         y -= this.canvasOffset.y - this.targetDimension.height / 2;;
 
         // Allow "corner sliding"
-        x = (x > this.canvasBoundary.minX ? (x < this.canvasBoundary.maxX - this.targetDimension.width ? x : this.canvasBoundary.maxX - this.targetDimension.width) : this.canvasBoundary.minX)
-        y = (y > this.canvasBoundary.minY ? (y < this.canvasBoundary.maxY - this.targetDimension.height ? y : this.canvasBoundary.maxY - this.targetDimension.height) : this.canvasBoundary.minY)
+        x = (x > this._canvasBoundary.minX ? (x < this._canvasBoundary.maxX - this.targetDimension.width ? x : this._canvasBoundary.maxX - this.targetDimension.width) : this._canvasBoundary.minX)
+        y = (y > this._canvasBoundary.minY ? (y < this._canvasBoundary.maxY - this.targetDimension.height ? y : this._canvasBoundary.maxY - this.targetDimension.height) : this._canvasBoundary.minY)
 
         this._target.style.left = x + "px";
         this._target.style.top = y + "px";
     }
 
-    inceraseDeadZone(count = 10) {
-        this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
-            this._deadZoneElem.style.display = "block";
+    inceraseDeadZone() {
 
     }
 

@@ -346,8 +346,8 @@ class World {
 
     inceraseDeadZone(count = 10) {
         this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
+        this._deadZoneElem.style.right = (this._canvasRect.width - _deadZoneWidth) + "px";
+        if (_deadZoneWidth > 0)
             this._deadZoneElem.style.display = "block";
 
     }

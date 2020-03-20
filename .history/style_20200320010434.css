@@ -122,15 +122,3 @@ button {
     font-weight: bold;
     font-size: 50px;
 }
-
-
-/* https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
-
-.noselect {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}

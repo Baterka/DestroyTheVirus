@@ -2,9 +2,7 @@ const randomNumber = (min, max) => {
     return Math.floor((Math.random() * max) + min);
 }
 
-class Audio {
-
-    globalVolume = 0.25;
+class AudioController {
 
     _sources = {
         // https://freesound.org/people/InspectorJ/sounds/484344/
@@ -18,7 +16,6 @@ class Audio {
     constructor() {
         for (let key in this._sources) {
             this.tracks[key] = document.createElement("audio");
-            this.tracks[key].volume = this.globalVolume;
             this.tracks[key].src = this._sources[key];
             console.log(`[AUDIO] Source '${key}' loaded.`);
         }
@@ -27,8 +24,8 @@ class Audio {
     play(track) {
         if (!track)
             console.error(`[AUDIO] Source '${name}' does not exist.`);
-        track.currentTime = 0;
-        track.play();
+        this.tracks[name].currentTime = 0;
+        this.tracks[name].play();
     }
 }
 
@@ -39,9 +36,8 @@ class Game {
     Virus = null;
 
     // Audio
-    _Audio = new Audio();
+    _Audio = new AudioController();
 
-    // Ticks per second (frames-per-second)
     tps = 60;
 
     // ENUM: RUNNING, GAMEOVER
@@ -58,26 +54,39 @@ class Game {
         this.Virus = new Virus(this);
 
         // Game tick
-        setInterval(() => this._tick(), 1000 / this.tps);
+        //setInterval(() => this._tick(), 1000 / this.tps)
     }
 
     /**
      * Game tick
      */
     _tick() {
-        // Legacy (I used event handlers instead)
+        let x = (this._Player.pos.x - this.canvasOffset.x);
+        let y = (this._Player.pos.y - this.canvasOffset.y);
+
+        // Allow "corner sliding"
+        x = (x > this.mapBoundary.minX ? (x < this.mapBoundary.maxX ? x : this.mapBoundary.maxX) : this.mapBoundary.minX)
+        y = (y > this.mapBoundary.minY ? (y < this.mapBoundary.maxY ? y : this.mapBoundary.maxY) : this.mapBoundary.minY)
+
+        this.target.style.left = x + "px";
+        this.target.style.top = y + "px";
     }
 
     addScore() {
         this._Audio.play(this._Audio.tracks.success);
-        this.Player.setScore(1);
+        this._Player.setScore(1);
     }
 
     deleteScore() {
         this._Audio.play(this._Audio.tracks.fail);
-        this.Player.setScore(-1);
+        this._Player.setScore(-1);
 
-        this.World.inceraseDeadZone();
+        if (this._Player.missed >= this._Player.maxMissed || this._Player.score < 0) {
+            this._World.toggleGameOver();
+            this._Player._Virus.toggleSpawning(false);
+            this.gameState === "GAMEOVER";
+            this._buttonNewGameElem.disabled = false;
+        }
     }
 }
 
@@ -102,6 +111,8 @@ class Player {
     missed = 0;
 
     maxMissed = 3;
+
+
 
     constructor(game, radioElem) {
         // Reference to Game controller
@@ -158,22 +169,14 @@ class Player {
             }
         });
 
-        /**
-         * Why not just listen on 'this._Game.World.canvas'?
-         * Answer: Because I like sliding around corners!
-         */
-        document.addEventListener("mousemove", e => {
+        this._Game.World.canvas.addEventListener("mousemove", e => {
             if (this.radio_input !== 'mouse')
                 return;
 
-            this._Game.World.moveTarget(e.clientX, e.clientY);
+            this.pos = { x: e.clientX, y: e.clientY };
         });
 
-        /**
-         * Why not just listen on 'this._Game.World.canvas'?
-         * Answer: Same as above!
-         */
-        document.addEventListener("click", e => {
+        this._Game.World.canvas.addEventListener("click", e => {
             const parent = e.target.parentElement;
             if (parent.className == 'virus') {
                 console.log("Clicked on virus ID:", parent.id);
@@ -214,9 +217,9 @@ class Virus {
 
     _list = {};
 
-    _spawningEnabled = true;
+    _spawningEnabled = false;
 
-    _spawnRate = 200;
+    _spawnRate = 2000;
 
     constructor(game) {
         // Reference to Game controller
@@ -232,17 +235,20 @@ class Virus {
 
         if (this._spawningEnabled)
             this._spawner();
+
+        this.spawn(x, y);
     }
 
     _spawner() {
         setTimeout(() => {
             if (!this._spawningEnabled)
                 return;
-            const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX + 15);
-            const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 13);
+            const x = randomNumber(this._Game.mapBoundary.minX, this._Game.mapBoundary.maxX + 15);
+            const y = randomNumber(this._Game.mapBoundary.minY, this._Game.mapBoundary.maxY - 13);
             this.spawn(x, y);
+            console.log(this._spawnRate);
             this._spawner();
-        }, this._spawnRate);
+        }, --this._spawnRate);
     }
 
     toggleSpawning(enable) {
@@ -298,10 +304,15 @@ class World {
         y: 0
     }
 
+    _targetRect = this._target.getBoundingClientRect();
+    _targetDimensions = {
+        width: this._targetRect.width,
+        height: this._targetRect.height
+    }
+
     // DeadZone
     _deadZoneElem = document.getElementById("deadZone");
     _deadZoneWidth = 0;
-
 
     // GameOver
     _gameOverElem = document.getElementById("gameOver");
@@ -311,44 +322,15 @@ class World {
         this._Game = game;
 
         this._target.style.display = "block";
-        this._targetRect = this._target.getBoundingClientRect();
-        this.targetDimension = {
-            width: this._targetRect.width,
-            height: this._targetRect.height
-        }
 
         window.addEventListener("resize", () => {
             this._debounceResize(this._onWindowResize.bind(this))
         });
 
         this._onWindowResize();
-
-        this._canvasRect = this.canvas.getBoundingClientRect();
-        this.canvasBoundary = {
-            minX: this._canvasOffset.x,
-            minY: this._canvasOffset.y,
-            maxX: this._canvasRect.width - this._canvasOffset.x,
-            maxY: this._canvasRect.height - this._canvasOffset.y
-        }
     }
 
-    moveTarget(x, y) {
-        x -= this.canvasOffset.x - this.targetDimension.width / 2;
-        y -= this.canvasOffset.y - this.targetDimension.height / 2;;
-
-        // Allow "corner sliding"
-        x = (x > this.canvasBoundary.minX ? (x < this.canvasBoundary.maxX - this.targetDimension.width ? x : this.canvasBoundary.maxX - this.targetDimension.width) : this.canvasBoundary.minX)
-        y = (y > this.canvasBoundary.minY ? (y < this.canvasBoundary.maxY - this.targetDimension.height ? y : this.canvasBoundary.maxY - this.targetDimension.height) : this.canvasBoundary.minY)
-
-        this._target.style.left = x + "px";
-        this._target.style.top = y + "px";
-    }
-
-    inceraseDeadZone(count = 10) {
-        this._deadZoneWidth += count;
-        this._deadZoneElem.style.right = (this._canvasRect.width - this._deadZoneWidth) + "px";
-        if (this._deadZoneWidth > 0)
-            this._deadZoneElem.style.display = "block";
+    inceraseDeadZone() {
 
     }
 
@@ -361,8 +343,8 @@ class World {
      */
     _onWindowResize() {
         this.canvasOffset = {
-            x: this.canvas.offsetLeft + this.targetDimension.width,
-            y: this.canvas.offsetTop + this.targetDimension.height
+            x: this.canvas.offsetLeft + this._targetDimensions.width,
+            y: this.canvas.offsetTop + this._targetDimensions.height
         }
         console.log("Window resized! New cancas offset:", this.canvasOffset);
     }
