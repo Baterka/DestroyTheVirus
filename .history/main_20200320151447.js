@@ -353,10 +353,10 @@ class Virus {
 
     _spawningEnabled = false;
 
-    _spawnRate = 2000; // How fast spawn new virus (ms)
-    _maxSpawnRate = 250; // Fastest speed of virus spawning (ms)
+    _spawnRate = 1000; // How fast spawn new virus (ms)
+    _maxSpawnRate = 100; // Fastest speed of virus spawning (ms)
     hideSpeed = 1000; // How fast will virus hide (ms)
-    _degradationSpeed = 10; // How much faster will next spawn be (ms)
+    _degradationSpeed = 1; // How much faster will next spawn be (ms)
 
     _spawnerTimer = null;
 
@@ -376,15 +376,15 @@ class Virus {
             this._spawner();
     }
 
-    _spawner() {
-        this._spawnerTimer = setTimeout(() => {
-            const x = randomNumber(0, this._Game.World.canvasDimension.width - this.virusDimension.width);
-            const y = randomNumber(0, this._Game.World.canvasDimension.height - this.virusDimension.height);
-            this.spawn(x, y);
-            if (this._spawnRate > this._maxSpawnRate)
-                this._spawnRate -= this._degradationSpeed;
-            this._spawner();
-        }, this._spawnRate);
+    async _spawner() {
+        if (this._spawnRate > this._maxSpawnRate)
+            this._spawnRate -= this._degradationSpeed;
+        console.log(this._spawnRate);
+        await delay(this._spawnRate);
+        const x = randomNumber(0, this._Game.World.canvasDimension.width - this.virusDimension.width);
+        const y = randomNumber(0, this._Game.World.canvasDimension.height - this.virusDimension.height);
+        this.spawn(x, y);
+        this._spawner();
     }
 
     toggleSpawning(enable) {

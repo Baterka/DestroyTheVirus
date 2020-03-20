@@ -1,30 +1,12 @@
-// Debug moode
-const debug = false;
+const debug = true;
 
-/**
- * Generates random integer between min and max (included)
- * @param int min 
- * @param int max 
- */
 const randomNumber = (min, max) => {
     return Math.floor((Math.random() * (max - min + 1)) + min);
 }
 
-/**
- * Promise based delay timer
- * @param int ms 
- */
-const delay = ms => {
-    return new Promise(resolve => setTimeout(() => resolve(), ms));
-}
-
-/**
- * Audio class
- * Manager for audio tracks
- */
 class Audio {
 
-    globalVolume = 0.5;
+    globalVolume = 0.25;
 
     _sources = {
         // https://freesound.org/people/InspectorJ/sounds/484344/
@@ -52,10 +34,6 @@ class Audio {
     }
 }
 
-/**
- * Game class
- * Main game logic and tick provider
- */
 class Game {
     // Will be loaded after DOM will be rendered
     World = null;
@@ -151,7 +129,6 @@ class Game {
 }
 
 /**
- * Player class
  * Input and score handler
  */
 class Player {
@@ -317,28 +294,24 @@ class Player {
         if (!Object.keys(this._pressedKeys).length)
             return;
 
-        if (this._pressedKeys["w"] && this.cursorPosition.y - this.keyboardSpeed > this._Game.World.canvasBoundary.minY + this._Game.World.targetDimension.center.y)
+        if (this._pressedKeys["w"] && this.cursorPosition.y >= this._Game.World.canvasBoundary.minY + this._Gams.World.targetDimension.center.y)
             this.cursorPosition.y -= this.keyboardSpeed;
-        if (this._pressedKeys["s"] && this.cursorPosition.y + this.keyboardSpeed < this._Game.World.canvasBoundary.maxY - this._Game.World.targetDimension.center.y)
+        if (this._pressedKeys["s"] && this.cursorPosition.y <= this._Game.World.canvasBoundary.maxY - this._Game.World.targetDimension.center.y)
             this.cursorPosition.y += this.keyboardSpeed;
-        if (this._pressedKeys["a"] && this.cursorPosition.x - this.keyboardSpeed > this._Game.World.canvasBoundary.minX + this._Game.World.targetDimension.center.x)
+        if (this._pressedKeys["a"] && this.cursorPosition.x >= this._Game.World.canvasBoundary.minX + this._Game.World.targetDimension.center.x)
             this.cursorPosition.x -= this.keyboardSpeed;
-        if (this._pressedKeys["d"] && this.cursorPosition.x + this.keyboardSpeed < this._Game.World.canvasBoundary.maxX - this._Game.World.targetDimension.center.x)
+        if (this._pressedKeys["d"] && this.cursorPosition.x <= this._Game.World.canvasBoundary.maxX - this._Game.World.targetDimension.center.x)
             this.cursorPosition.x += this.keyboardSpeed;
 
         if (this._Game.debug) {
             this._debugDotElem.style.top = (this.cursorPosition.y - 2) + "px";
-            this._debugDotElem.style.left = (this.cursorPosition.x - 2) + "px";
+            this._debugDotElem.style.left = (this.cursorPosition.x - 1) + "px";
         }
 
         this._Game.World.moveTarget(this.cursorPosition.x, this.cursorPosition.y);
     }
 }
 
-/**
- * Virus class
- * Popup virus spawner and handler
- */
 class Virus {
     _parentElem = document.getElementById('virusses');
     _virusElem = document.createElement("div");
@@ -346,17 +319,10 @@ class Virus {
     _currentId = 0;
     _list = {};
 
-    virusDimension = {
-        width: 46 + 2,
-        height: 75 + 1,
-    }
-
     _spawningEnabled = false;
 
-    _spawnRate = 2000; // How fast spawn new virus (ms)
-    _maxSpawnRate = 250; // Fastest speed of virus spawning (ms)
-    hideSpeed = 1000; // How fast will virus hide (ms)
-    _degradationSpeed = 10; // How much faster will next spawn be (ms)
+    _spawnRate = 2000;
+    hideSpeed = 1000;
 
     _spawnerTimer = null;
 
@@ -377,12 +343,11 @@ class Virus {
     }
 
     _spawner() {
+        this._spawnRate -= 10;
         this._spawnerTimer = setTimeout(() => {
-            const x = randomNumber(0, this._Game.World.canvasDimension.width - this.virusDimension.width);
-            const y = randomNumber(0, this._Game.World.canvasDimension.height - this.virusDimension.height);
+            const x = randomNumber(this._Game.World.canvasBoundary.minX, this._Game.World.canvasBoundary.maxX - 48);
+            const y = randomNumber(this._Game.World.canvasBoundary.minY, this._Game.World.canvasBoundary.maxY - 76);
             this.spawn(x, y);
-            if (this._spawnRate > this._maxSpawnRate)
-                this._spawnRate -= this._degradationSpeed;
             this._spawner();
         }, this._spawnRate);
     }
@@ -411,15 +376,15 @@ class Virus {
         this._autoHide(virusElem.id);
     }
 
-    async _autoHide(id) {
-        await delay(this.hideSpeed);
-
-        const elem = this._list[id];
-        if (!elem)
-            return;
-        this._Game.deleteScore();
-        elem.remove();
-        delete this._list[id];
+    _autoHide(id) {
+        setTimeout(() => {
+            const elem = this._list[id];
+            if (!elem)
+                return;
+            this._Game.deleteScore();
+            elem.remove();
+            delete this._list[id];
+        }, this.hideSpeed);
     }
 
     /**
@@ -437,10 +402,6 @@ class Virus {
     }
 }
 
-/**
- * World class
- * Game window view UI manager
- */
 class World {
     canvas = document.getElementById('canvas');
 
@@ -474,20 +435,15 @@ class World {
                 y: Math.floor(this._targetRect.width / 2) + 1
             }
         }
+        this.onWindowResize();
 
         this._canvasRect = this.canvas.getBoundingClientRect();
-        this.canvasDimension = {
-            width: this._canvasRect.width,
-            height: this._canvasRect.height,
-        }
         this.canvasBoundary = {
             minX: this._canvasOffset.x,
             minY: this._canvasOffset.y,
             maxX: this._canvasRect.width + this._canvasOffset.x,
             maxY: this._canvasRect.height + this._canvasOffset.y
         }
-
-        this.onWindowResize();
     }
 
     moveTarget(x, y) {
@@ -539,19 +495,8 @@ class World {
             x: this.canvas.offsetLeft,
             y: this.canvas.offsetTop
         }
-        this.canvasDimension = {
-            width: this._canvasRect.width,
-            height: this._canvasRect.height,
-        }
-        this.canvasBoundary = {
-            minX: this._canvasOffset.x,
-            minY: this._canvasOffset.y,
-            maxX: this._canvasRect.width + this._canvasOffset.x,
-            maxY: this._canvasRect.height + this._canvasOffset.y
-        }
         console.log("Window resized! New canvas offset:", this._canvasOffset);
     }
 }
 
-// Initialize game
 const game = new Game(debug);

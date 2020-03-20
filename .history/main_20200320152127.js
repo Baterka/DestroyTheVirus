@@ -15,7 +15,7 @@ const randomNumber = (min, max) => {
  * @param int ms 
  */
 const delay = ms => {
-    return new Promise(resolve => setTimeout(() => resolve(), ms));
+    return new Promise(resolve => setTimeout(() => resolve(x), ms));
 }
 
 /**
@@ -353,8 +353,8 @@ class Virus {
 
     _spawningEnabled = false;
 
-    _spawnRate = 2000; // How fast spawn new virus (ms)
-    _maxSpawnRate = 250; // Fastest speed of virus spawning (ms)
+    _spawnRate = 1000; // How fast spawn new virus (ms)
+    _maxSpawnRate = 500; // Fastest speed of virus spawning (ms)
     hideSpeed = 1000; // How fast will virus hide (ms)
     _degradationSpeed = 10; // How much faster will next spawn be (ms)
 

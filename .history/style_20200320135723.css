@@ -177,7 +177,7 @@ button:disabled {
 }
 
 .blink {
-    animation: blinker 1s step-end infinite;
+    animation: blinker 500ms linear infinite;
 }
 
 @keyframes blinker {

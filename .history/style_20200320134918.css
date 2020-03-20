@@ -72,8 +72,8 @@ button:disabled {
     display: none;
     top: 0;
     left: 0;
-    width: 47px;
-    height: 47px;
+    width: 48px;
+    height: 48px;
     /* https://www.stickpng.com/img/miscellaneous/symbols/red-target */
     background-image: url(./target.png);
     background-repeat: no-repeat;
@@ -168,23 +168,10 @@ button:disabled {
 #debugDot {
     z-index: 100;
     position: absolute;
-    width: 5px;
-    height: 5px;
-    top: 0;
+    width: 8px;
+    height: 8px;
+    top: 100px;
     left: 0;
-    background-color: red;
-    border-radius: 5px;
-}
-
-.blink {
-    animation: blinker 1s step-end infinite;
-}
-
-@keyframes blinker {
-    0% {
-        background-color: red;
-    }
-    50% {
-        background-color: green;
-    }
+    background-color: green;
+    border-radius: 8px;
 }

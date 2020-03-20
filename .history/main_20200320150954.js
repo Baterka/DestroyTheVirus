@@ -15,7 +15,7 @@ const randomNumber = (min, max) => {
  * @param int ms 
  */
 const delay = ms => {
-    return new Promise(resolve => setTimeout(() => resolve(), ms));
+    return new Promise(resolve => setTimeout(() => resolve(x), ms));
 }
 
 /**
@@ -353,10 +353,8 @@ class Virus {
 
     _spawningEnabled = false;
 
-    _spawnRate = 2000; // How fast spawn new virus (ms)
-    _maxSpawnRate = 250; // Fastest speed of virus spawning (ms)
-    hideSpeed = 1000; // How fast will virus hide (ms)
-    _degradationSpeed = 10; // How much faster will next spawn be (ms)
+    _spawnRate = 2000;
+    hideSpeed = 1000;
 
     _spawnerTimer = null;
 
@@ -377,12 +375,11 @@ class Virus {
     }
 
     _spawner() {
+        this._spawnRate -= 10;
         this._spawnerTimer = setTimeout(() => {
             const x = randomNumber(0, this._Game.World.canvasDimension.width - this.virusDimension.width);
             const y = randomNumber(0, this._Game.World.canvasDimension.height - this.virusDimension.height);
             this.spawn(x, y);
-            if (this._spawnRate > this._maxSpawnRate)
-                this._spawnRate -= this._degradationSpeed;
             this._spawner();
         }, this._spawnRate);
     }
